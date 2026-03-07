@@ -6,6 +6,22 @@ FILE: db_helper.dart
 Database helper untuk semua operasi SQLite.
 
 Semua akses database harus melalui file ini.
+
+ROLE FILE
+---------
+✔ membuat database
+✔ mendefinisikan schema tabel
+✔ melakukan CRUD operation
+
+Architecture:
+
+UI Layer
+↓
+Todo Model
+↓
+DBHelper  ← file ini
+↓
+SQLite Database
 */
 
 import 'package:sqflite/sqflite.dart';
@@ -24,8 +40,7 @@ class DBHelper {
 
   static final DBHelper instance = DBHelper._privateConstructor();
 
-  static const int _dbVersion = 3;
-
+  static const int _dbVersion = 4;
   static const String _dbName = "todo.db";
 
   static Database? _database;
@@ -67,7 +82,7 @@ class DBHelper {
 
   /*
   ========================================================
-  DATABASE SCHEMA
+  CREATE DATABASE (SCHEMA)
   ========================================================
   */
 
@@ -118,6 +133,22 @@ class DBHelper {
 
     }
 
+    if (oldVersion < 4) {
+
+      await db.execute(
+        'ALTER TABLE todos ADD COLUMN ref TEXT',
+      );
+
+      await db.execute(
+        'ALTER TABLE todos ADD COLUMN due_date TEXT',
+      );
+
+      await db.execute(
+        'ALTER TABLE todos ADD COLUMN task_date TEXT',
+      );
+
+    }
+
   }
 
   /*
@@ -133,7 +164,7 @@ class DBHelper {
     return await db.insert(
       'todos',
       todo.toMap(),
-      conflictAlgorithm: ConflictAlgorithm.abort,
+      conflictAlgorithm: ConflictAlgorithm.replace,
     );
 
   }

@@ -1,155 +1,171 @@
 /*
 ============================================================
-FILE: main.dart
+MAIN ENTRY POINT
 ============================================================
 
-FILE ROLE
----------
-File ini adalah ENTRY POINT aplikasi Flutter.
+File ini adalah titik awal aplikasi Flutter.
 
-Setiap aplikasi Flutter selalu dimulai dari fungsi:
+Semua aplikasi Flutter selalu mulai dari function:
 
 main()
 
-Flutter akan menjalankan aplikasi dari titik ini.
+Urutan eksekusinya:
 
-============================================================
-ARCHITECTURE OVERVIEW
-------------------------------------------------------------
-
-Aplikasi ini mengikuti struktur sederhana:
-
-UI Layer
-↓
-Model Layer
-↓
-Database Layer
-
-File Structure:
-
-main.dart
-    ↓
-pages/todo_page.dart        → UI
-models/todo.dart            → Data Model
-database/db_helper.dart     → Database Access
-
-============================================================
-SEPARATION OF CONCERN (SOC)
-------------------------------------------------------------
-
-File ini hanya bertanggung jawab untuk:
-
-✔ Memulai aplikasi
-✔ Menentukan root widget
-✔ Menentukan halaman pertama
-
-File ini TIDAK BOLEH berisi:
-
-✘ Database logic
-✘ Business logic
-✘ Data manipulation
-
-Hal-hal tersebut ditangani oleh layer lain.
-
-============================================================
-CONTROL FLOW (ALUR PROGRAM)
-------------------------------------------------------------
-
-Ketika aplikasi dijalankan:
-
+Program Start
+      ↓
 main()
-  ↓
+      ↓
+Initialize dependencies (SQLite, service, dll)
+      ↓
 runApp()
-  ↓
-MyApp()
-  ↓
-MaterialApp
-  ↓
-TodoPage()
-
-============================================================
-DATA FLOW OVERVIEW
-------------------------------------------------------------
-
-User Action
-↓
-TodoPage (UI)
-↓
-Todo Model
-↓
-DBHelper (Database)
-↓
-SQLite Storage
-↓
-Data kembali ke UI
-
-============================================================
+      ↓
+Flutter membangun Widget Tree
+      ↓
+UI pertama muncul
 */
 
 import 'package:flutter/material.dart';
+
+/*
+sqflite_common_ffi digunakan untuk SQLite di Desktop.
+
+Kenapa perlu ini?
+
+sqflite default hanya untuk:
+- Android
+- iOS
+
+Sedangkan untuk:
+- Windows
+- Linux
+- Mac
+
+kita harus menggunakan FFI (Foreign Function Interface)
+
+FFI = jembatan antara Dart dan native C library
+*/
+import 'package:sqflite_common_ffi/sqflite_ffi.dart';
+
 import 'pages/todo_page.dart';
 
 void main() {
+
+  /*
+  ============================================================
+  INITIALIZE SQLITE FOR DESKTOP
+  ============================================================
+
+  sqfliteFfiInit()
+
+  Fungsi ini melakukan:
+
+  1. Load SQLite native library
+  2. Menghubungkan SQLite ke Dart runtime
+  3. Menyiapkan database engine
+
+  Tanpa ini database tidak bisa dibuat.
+
+  Error yang muncul sebelumnya:
+  databaseFactory not initialized
+  */
+  sqfliteFfiInit();
+
+
+  /*
+  ============================================================
+  SET DATABASE FACTORY
+  ============================================================
+
+  databaseFactory adalah global variable yang dipakai
+  oleh library sqflite.
+
+  Secara default:
+
+      databaseFactory → Android SQLite
+
+  Di desktop kita ganti menjadi:
+
+      databaseFactoryFfi → SQLite Desktop
+  */
+
+  databaseFactory = databaseFactoryFfi;
+
+
+  /*
+  ============================================================
+  RUN APPLICATION
+  ============================================================
+
+  runApp()
+
+  Fungsi ini memulai Flutter framework.
+
+  runApp menerima ROOT WIDGET.
+  Root widget kita adalah:
+
+      MyApp()
+  */
+
   runApp(const MyApp());
 }
 
 /*
 ============================================================
-ROOT WIDGET
+ROOT APPLICATION WIDGET
 ============================================================
 
-MyApp adalah ROOT WIDGET aplikasi.
+Widget ini adalah root dari seluruh UI.
 
-Widget ini membangun kerangka utama aplikasi.
+Semua halaman aplikasi berada di bawah widget ini.
 
-Biasanya di sini kita mengatur:
+Widget tree akan menjadi:
 
-• theme
-• navigation
-• routing
-• global configuration
+MyApp
+   ↓
+MaterialApp
+   ↓
+TodoPage
+   ↓
+Todo List UI
 */
 
 class MyApp extends StatelessWidget {
+
   const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
 
     /*
-    ========================================================
-    MATERIAL APP
-    ========================================================
+    MaterialApp adalah wrapper utama aplikasi.
 
-    MaterialApp menyediakan:
+    Fungsi utamanya:
 
-    • Material Design UI
-    • navigation
-    • theme
-    • scaffold system
+    - Theme
+    - Navigation
+    - Routing
+    - Localization
+    - Scaffold support
     */
 
     return MaterialApp(
 
-      // menghilangkan banner debug
+      /*
+      Menghilangkan tulisan DEBUG di pojok kanan atas
+      */
       debugShowCheckedModeBanner: false,
 
       /*
-      ======================================================
-      HOME PAGE
-      ======================================================
-
-      Halaman pertama aplikasi adalah TodoPage.
-
-      Di halaman ini user akan:
-
-      • melihat daftar task
-      • menambah task
-      • mengedit task
-      • menghapus task
+      Judul aplikasi
       */
+      title: 'Todo App',
 
-      home: const TodoPage(),
+      /*
+      Halaman pertama yang dibuka saat aplikasi start
+      */
+      home: TodoPage(),
+
     );
   }
 }
+

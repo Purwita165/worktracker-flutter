@@ -3,90 +3,31 @@
 FILE: todo_page.dart
 ============================================================
 
-ROLE FILE INI
--------------
-Ini adalah UI Layer aplikasi.
+UI Layer dari aplikasi HB-ExeCon.
 
-Tanggung jawab file ini:
+Tugas file ini:
 
-✔ menampilkan daftar todo
-✔ menerima input user
-✔ mengatur state UI
-✔ memanggil operasi database
+• menampilkan daftar pekerjaan
+• menerima input user
+• mengelola state UI
+• memanggil DBHelper
 
-============================================================
-ARCHITECTURE POSITION
-------------------------------------------------------------
+Arsitektur:
 
-User Interaction
-↓
-TodoPage (UI Layer)
+UI
 ↓
 Todo Model
 ↓
-DBHelper (Database Layer)
+DBHelper
 ↓
 SQLite
-
-============================================================
-SEPARATION OF CONCERN
-------------------------------------------------------------
-
-UI Layer
-(todo_page.dart)
-
-✔ menampilkan data
-✔ menerima input user
-
-Model Layer
-(todo.dart)
-
-✔ mendefinisikan struktur data
-
-Database Layer
-(db_helper.dart)
-
-✔ CRUD database
-
-============================================================
-STATE MANAGEMENT
-------------------------------------------------------------
-
-State adalah data yang berubah selama aplikasi berjalan.
-
-State utama halaman ini:
-
-List<Todo> todos
-
-Ketika state berubah kita memanggil:
-
-setState()
-
-agar Flutter melakukan rebuild UI.
-
-============================================================
-DATA FLOW
-------------------------------------------------------------
-
-User klik Add
-↓
-Dialog muncul
-↓
-User isi form
-↓
-Todo object dibuat
-↓
-todos.add()
-↓
-setState()
-↓
-UI rebuild
 
 ============================================================
 */
 
 import 'package:flutter/material.dart';
 import '../models/todo.dart';
+import '../database/db_helper.dart';
 
 class TodoPage extends StatefulWidget {
   const TodoPage({Key? key}) : super(key: key);
@@ -96,20 +37,21 @@ class TodoPage extends StatefulWidget {
 }
 
 class _TodoPageState extends State<TodoPage> {
-
-  /*
-  ============================================================
-  STATE
-  ============================================================
-  */
+  final dbHelper = DBHelper.instance;
 
   List<Todo> todos = [];
 
   String filterMode = "all";
 
-  final TextEditingController descController = TextEditingController();
-  final TextEditingController refController = TextEditingController();
-  final TextEditingController workController = TextEditingController();
+  /*
+  ============================
+  FORM CONTROLLERS
+  ============================
+  */
+
+  final descController = TextEditingController();
+  final workController = TextEditingController();
+  final refController = TextEditingController();
 
   String? priority;
   DateTime? dueDate;
@@ -118,9 +60,9 @@ class _TodoPageState extends State<TodoPage> {
   final String currentUserId = "local-user";
 
   /*
-  ============================================================
-  PRIORITY CONFIG
-  ============================================================
+  ============================
+  PRIORITY LABEL
+  ============================
   */
 
   static const Map<String, String> priorityLabels = {
@@ -130,124 +72,108 @@ class _TodoPageState extends State<TodoPage> {
   };
 
   /*
-  ============================================================
-  ADD TODO
-  ============================================================
+  ============================
+  INIT
+  ============================
   */
 
-  void addTodo() {
+  @override
+  void initState() {
+    super.initState();
+    loadTodos();
+  }
 
-    if (descController.text.trim().isEmpty || priority == null) return;
+  /*
+  ============================
+  LOAD DATA FROM DATABASE
+  ============================
+  */
+
+  Future<void> loadTodos() async {
+    final data = await dbHelper.getTodos();
+
+    setState(() {
+      todos = data;
+    });
+  }
+
+  /*
+  ============================
+  ADD TODO
+  ============================
+  */
+
+  Future<void> addTodo() async {
+
+    print("ADD TODO START");
+
+    if (descController.text.trim().isEmpty) {
+      
+      return;
+    }
 
     final todo = Todo(
       userId: currentUserId,
       description: descController.text.trim(),
       workId: workController.text,
       ref: refController.text,
-      priority: priority!,
+      priority: priority ?? "M",
       dueDate: dueDate,
-      progress: progress,
+      progress: progress ?? 0,
       taskDate: DateTime.now(),
       isDone: false,
     );
 
-    setState(() {
-      todos.add(todo);
-    });
+    await dbHelper.insertTodo(todo);
+
+    print ("INSERT SUCCESS");
+
+    await loadTodos();
+
+    print("RELOAD TODOS");
 
     descController.clear();
-    refController.clear();
     workController.clear();
+    refController.clear();
+
     priority = null;
     dueDate = null;
-    progress = null;
+    progress = 0;
   }
 
   /*
-  ============================================================
-  EDIT TODO
-  ============================================================
+  ============================
+  DELETE
+  ============================
   */
 
-  void editTodo(int index) {
+  Future<void> deleteTodo(int id) async {
+    await dbHelper.deleteTodo(id);
 
-    final todo = todos[index];
-
-    descController.text = todo.description;
-
-    showDialog(
-      context: context,
-      builder: (_) {
-
-        return AlertDialog(
-          title: const Text("Edit Task"),
-          content: TextField(
-            controller: descController,
-            decoration: const InputDecoration(
-              labelText: "Description",
-            ),
-          ),
-          actions: [
-
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text("Cancel"),
-            ),
-
-            ElevatedButton(
-              onPressed: () {
-
-                setState(() {
-                  todo.description = descController.text;
-                });
-
-                Navigator.pop(context);
-              },
-              child: const Text("Save"),
-            )
-
-          ],
-        );
-      },
-    );
+    await loadTodos();
   }
 
   /*
-  ============================================================
-  DELETE TODO
-  ============================================================
+  ============================
+  TOGGLE STATUS
+  ============================
   */
 
-  void deleteTodo(int index) {
+  Future<void> toggleTodo(Todo todo) async {
+    todo.isDone = !todo.isDone;
 
-    setState(() {
-      todos.removeAt(index);
-    });
+    await dbHelper.updateTodoStatus(todo.id!, todo.isDone ? 1 : 0);
 
+    await loadTodos();
   }
 
   /*
-  ============================================================
-  TOGGLE COMPLETE
-  ============================================================
-  */
-
-  void toggleTodo(Todo todo) {
-
-    setState(() {
-      todo.isDone = !todo.isDone;
-    });
-
-  }
-
-  /*
-  ============================================================
-  FILTER FUNCTION
-  ============================================================
+  ============================
+  FILTER
+  ============================
   */
 
   List<Todo> getFilteredTodos() {
-
     if (filterMode == "active") {
       return todos.where((t) => !t.isDone).toList();
     }
@@ -256,46 +182,80 @@ class _TodoPageState extends State<TodoPage> {
       return todos.where((t) => t.isDone).toList();
     }
 
+    if (filterMode == "priority") {
+      final sorted = [...todos];
+
+      sorted.sort((a, b) => b.priority.compareTo(a.priority));
+
+      return sorted;
+    }
+
+    if (filterMode == "due") {
+      final sorted = [...todos];
+
+      sorted.sort((a, b) {
+        if (a.dueDate == null) return 1;
+        if (b.dueDate == null) return -1;
+
+        return a.dueDate!.compareTo(b.dueDate!);
+      });
+
+      return sorted;
+    }
+
     return todos;
   }
 
   /*
-  ============================================================
+  ============================
+  DATE PICKER
+  ============================
+  */
+
+  Future<void> pickDueDate(Function setStateDialog) async {
+    final date = await showDatePicker(
+      context: context,
+      initialDate: dueDate ?? DateTime.now(),
+      firstDate: DateTime(2023),
+      lastDate: DateTime(2100),
+    );
+
+    if (date != null) {
+      setStateDialog(() {
+        dueDate = date;
+      });
+    }
+  }
+
+  /*
+  ============================
   UI
-  ============================================================
+  ============================
   */
 
   @override
   Widget build(BuildContext context) {
-
     final filteredTodos = getFilteredTodos();
 
     return Scaffold(
-
-      appBar: AppBar(
-        title: const Text("HB-ExeCon v1"),
-      ),
+      appBar: AppBar(title: const Text("HB-ExeCon v1")),
 
       body: Column(
-
         children: [
-
           /*
           FILTER BAR
           */
-
           Padding(
-            padding: const EdgeInsets.all(8.0),
+            padding: const EdgeInsets.all(8),
 
             child: Wrap(
               spacing: 8,
 
               children: [
-
                 FilterChip(
                   label: const Text("All"),
                   selected: filterMode == "all",
-                  onSelected: (_){
+                  onSelected: (_) {
                     setState(() => filterMode = "all");
                   },
                 ),
@@ -303,7 +263,7 @@ class _TodoPageState extends State<TodoPage> {
                 FilterChip(
                   label: const Text("Active"),
                   selected: filterMode == "active",
-                  onSelected: (_){
+                  onSelected: (_) {
                     setState(() => filterMode = "active");
                   },
                 ),
@@ -311,151 +271,235 @@ class _TodoPageState extends State<TodoPage> {
                 FilterChip(
                   label: const Text("Completed"),
                   selected: filterMode == "completed",
-                  onSelected: (_){
+                  onSelected: (_) {
                     setState(() => filterMode = "completed");
                   },
                 ),
 
+                FilterChip(
+                  label: const Text("Priority"),
+                  selected: filterMode == "priority",
+                  onSelected: (_) {
+                    setState(() => filterMode = "priority");
+                  },
+                ),
+
+                FilterChip(
+                  label: const Text("Due Date"),
+                  selected: filterMode == "due",
+                  onSelected: (_) {
+                    setState(() => filterMode = "due");
+                  },
+                ),
               ],
             ),
           ),
 
           /*
-          TODO LIST
+          LIST
           */
-
           Expanded(
             child: filteredTodos.isEmpty
                 ? const Center(
                     child: Text(
                       "No tasks yet",
-                      style: TextStyle(
-                        fontSize: 18,
-                        color: Colors.grey,
-                      ),
+                      style: TextStyle(fontSize: 18, color: Colors.grey),
                     ),
                   )
                 : ListView.builder(
                     itemCount: filteredTodos.length,
-                    itemBuilder: (context, index) {
 
+                    itemBuilder: (context, index) {
                       final todo = filteredTodos[index];
 
-                      return Dismissible(
-                        key: Key(todo.hashCode.toString()),
-
-                        background: Container(
-                          color: Colors.red,
-                          alignment: Alignment.centerRight,
-                          padding: const EdgeInsets.only(right: 20),
-                          child: const Icon(Icons.delete, color: Colors.white),
+                      return ListTile(
+                        leading: Checkbox(
+                          value: todo.isDone,
+                          onChanged: (_) => toggleTodo(todo),
                         ),
 
-                        onDismissed: (_) {
-                          deleteTodo(todos.indexOf(todo));
-                        },
-
-                        child: ListTile(
-
-                          leading: Checkbox(
-                            value: todo.isDone,
-                            onChanged: (_) => toggleTodo(todo),
+                        title: Text(
+                          todo.description,
+                          style: TextStyle(
+                            decoration: todo.isDone
+                                ? TextDecoration.lineThrough
+                                : null,
                           ),
+                        ),
 
-                          title: Text(
-                            todo.description,
-                            style: TextStyle(
-                              decoration: todo.isDone
-                                  ? TextDecoration.lineThrough
-                                  : null,
-                            ),
-                          ),
+                        subtitle: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text("WorkID : ${todo.workId ?? "-"}"),
+                            Text("Ref    : ${todo.ref ?? "-"}"),
 
-                          subtitle: Text(
-                            "Pr: ${priorityLabels[todo.priority]}  "
-                            "Prog: ${todo.progress ?? 0}%",
-                          ),
+                            Text("Priority : ${priorityLabels[todo.priority]}"),
 
-                          onTap: (){
-                            editTodo(todos.indexOf(todo));
+                            Text("Progress : ${todo.progress ?? 0}%"),
+
+                            if (todo.dueDate != null)
+                              Text(
+                                "Due : ${todo.dueDate!.toLocal().toString().split(' ')[0]}",
+                              ),
+                          ],
+                        ),
+
+                        trailing: IconButton(
+                          icon: const Icon(Icons.delete, color: Colors.red),
+
+                          onPressed: () {
+                            deleteTodo(todo.id!);
                           },
-
                         ),
                       );
-
                     },
                   ),
           ),
-
         ],
-
       ),
 
       /*
-      ========================================================
-      FLOATING BUTTON
-      ========================================================
+      ADD BUTTON
       */
-
       floatingActionButton: FloatingActionButton(
-
         onPressed: () {
+          // RESET FORM
+          descController.clear();
+          workController.clear();
+          refController.clear();
+
+          priority = "M";
+          progress = 0;
+          dueDate = DateTime.now();
 
           showDialog(
-
             context: context,
+            builder: (context) {
+              return StatefulBuilder(
+                builder: (context, setStateDialog) {
+                  return AlertDialog(
+                    title: const Text("Add Task"),
 
-            builder: (_) {
+                    content: SingleChildScrollView(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          TextField(
+                            controller: descController,
+                            decoration: const InputDecoration(
+                              labelText: "Description",
+                            ),
+                          ),
 
-              return AlertDialog(
+                          TextField(
+                            controller: workController,
+                            decoration: const InputDecoration(
+                              labelText: "WorkID",
+                            ),
+                          ),
 
-                title: const Text("Add Task"),
+                          TextField(
+                            controller: refController,
+                            decoration: const InputDecoration(
+                              labelText: "Reference",
+                            ),
+                          ),
 
-                content: TextField(
-                  controller: descController,
-                  decoration: const InputDecoration(
-                    labelText: "Description",
-                  ),
-                ),
+                          DropdownButtonFormField<String>(
+                            value: priority,
+                            decoration: const InputDecoration(
+                              labelText: "Priority",
+                            ),
+                            items: const [
+                              DropdownMenuItem(value: "H", child: Text("High")),
+                              DropdownMenuItem(
+                                value: "M",
+                                child: Text("Medium"),
+                              ),
+                              DropdownMenuItem(value: "L", child: Text("Low")),
+                            ],
+                            onChanged: (value) {
+                              setStateDialog(() {
+                                priority = value;
+                              });
+                            },
+                          ),
 
-                actions: [
+                          const SizedBox(height: 20),
 
-                  TextButton(
-                    onPressed: (){
-                      Navigator.pop(context);
-                    },
-                    child: const Text("Cancel"),
-                  ),
+                          Text("Progress: ${progress ?? 0}%"),
 
-                  ElevatedButton(
-                    onPressed: (){
+                          Slider(
+                            value: (progress ?? 0).toDouble(),
+                            min: 0,
+                            max: 100,
+                            divisions: 20,
+                            onChanged: (value) {
+                              setStateDialog(() {
+                                progress = value.toInt();
+                              });
+                            },
+                          ),
 
-                      priority ??= "M";
-                      progress ??= 0;
+                          SizedBox(height: 10),
 
-                      addTodo();
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                "Due: ${dueDate != null ? dueDate!.toString().split(' ')[0] : 'None'}",
+                              ),
 
-                      Navigator.pop(context);
+                              ElevatedButton(
+                                onPressed: () async {
+                                  final picked = await showDatePicker(
+                                    context: context,
+                                    initialDate: dueDate ?? DateTime.now(),
+                                    firstDate: DateTime(2020),
+                                    lastDate: DateTime(2100),
+                                  );
 
-                    },
-                    child: const Text("Save"),
-                  )
+                                  if (picked != null) {
+                                    setStateDialog(() {
+                                      dueDate = picked;
+                                    });
+                                  }
+                                },
+                                child: const Text("Pick Due Date"),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
 
-                ],
+                    actions: [
+                      TextButton(
+                        onPressed: () {
+                          Navigator.pop(context);
+                        },
+                        child: const Text("Cancel"),
+                      ),
 
+                      ElevatedButton(
+                        onPressed: () async {
+                          await addTodo();
+
+                          Navigator.pop(context);
+                        },
+
+                        child: const Text("Save"),
+                      ),
+                    ],
+                  );
+                },
               );
-
             },
-
           );
-
         },
 
         child: const Icon(Icons.add),
-
       ),
-
     );
-
   }
 }

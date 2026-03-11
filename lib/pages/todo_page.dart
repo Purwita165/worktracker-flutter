@@ -58,6 +58,7 @@ class _TodoPageState extends State<TodoPage> {
   final workController = TextEditingController();
   final refController = TextEditingController();
   final searchController = TextEditingController();
+  final quickController = TextEditingController();
 
   String? priority;
   DateTime? dueDate;
@@ -149,6 +150,39 @@ class _TodoPageState extends State<TodoPage> {
     );
 
     await dbHelper.insertTodo(todo);
+
+    await loadTodos();
+  }
+
+  /*
+============================================================
+QUICK CAPTURE TASK
+============================================================
+Digunakan untuk menambahkan task dengan cepat.
+
+Metadata default:
+priority = Medium
+progress = 0
+dueDate = null
+*/
+  Future<void> quickAddTask(String text) async {
+    if (text.trim().isEmpty) return;
+
+    final todo = Todo(
+      userId: currentUserId,
+      description: text.trim(),
+      workId: "",
+      ref: "",
+      priority: "M",
+      dueDate: null,
+      progress: 0,
+      taskDate: DateTime.now(),
+      isDone: false,
+    );
+
+    await dbHelper.insertTodo(todo);
+
+    quickController.clear();
 
     await loadTodos();
   }
@@ -700,6 +734,35 @@ DUE DATE FILTER DIALOG
           const SizedBox(height: 10),
 
           /*
+============================================================
+QUICK CAPTURE
+============================================================
+Input cepat untuk menangkap ide atau task.
+
+User cukup tekan Enter untuk menyimpan task.
+*/
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+            child: TextField(
+              controller: quickController,
+
+              decoration: InputDecoration(
+                hintText: "Quick capture task...",
+                prefixIcon: const Icon(Icons.flash_on),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                filled: true,
+                fillColor: Colors.grey[100],
+              ),
+
+              onSubmitted: (value) {
+                quickAddTask(value);
+              },
+            ),
+          ),
+
+          /*
           SEARCH BAR
           */
           Padding(
@@ -833,12 +896,14 @@ DUE DATE FILTER DIALOG
                                   spacing: 16,
                                   runSpacing: 4,
                                   children: [
-                                    Text("WorkID: ${todo.workId ?? "-"}",
-                                    style: TextStyle(fontSize:metaSize),
+                                    Text(
+                                      "WorkID: ${todo.workId ?? "-"}",
+                                      style: TextStyle(fontSize: metaSize),
                                     ),
 
-                                    Text("Ref: ${todo.ref ?? "-"}",
-                                    style: TextStyle(fontSize:metaSize),
+                                    Text(
+                                      "Ref: ${todo.ref ?? "-"}",
+                                      style: TextStyle(fontSize: metaSize),
                                     ),
 
                                     Text(
@@ -850,15 +915,16 @@ DUE DATE FILTER DIALOG
                                       ),
                                     ),
 
-                                    Text("Progress: ${todo.progress ?? 0}%",
-                                    style: TextStyle(fontSize:metaSize),
+                                    Text(
+                                      "Progress: ${todo.progress ?? 0}%",
+                                      style: TextStyle(fontSize: metaSize),
                                     ),
 
                                     if (todo.dueDate != null)
                                       Text(
                                         "Due: ${todo.dueDate!.toLocal().toString().split(' ')[0]}",
-                                    style: TextStyle(fontSize:metaSize),
-                                    ),
+                                        style: TextStyle(fontSize: metaSize),
+                                      ),
                                   ],
                                 ),
 

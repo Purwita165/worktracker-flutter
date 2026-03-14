@@ -957,10 +957,10 @@ Menampilkan task yang dipilih sebagai fokus hari ini.
                             "Duration: ${getDuration(todo)}";
                       } else {
                         metaText =
-                            "WorkID: ${todo.workId}   "
-                            "Ref: ${todo.ref}   "
-                            "Priority: ${todo.priority}   "
-                            "Progress: ${todo.progress}%   "
+                            "WorkID: ${todo.workId}    "
+                            "Ref: ${todo.ref}    "
+                            "Priority: ${priorityLabels[todo.priority] ?? "-"}    "
+                            "Progress: ${todo.progress}%    "
                             "Due: ${formatDate(todo.dueDate)}";
                       }
 
@@ -1007,46 +1007,37 @@ Menampilkan task yang dipilih sebagai fokus hari ini.
                               children: [
                                 const SizedBox(height: 4),
 
-                                Text(
-                                  metaText,
-                                  style: const TextStyle(fontSize: 12),
-                                ),
+                                if (todo.isDone)
+                                  Text(
+                                    metaText,
+                                    style: const TextStyle(fontSize: 13),
+                                  )
+                                else
+                                  Row(
+                                    children: [
+                                      Text("WorkID: ${todo.workId}"),
+                                      const SizedBox(width: 16),
 
-                                Wrap(
-                                  spacing: 16,
-                                  runSpacing: 4,
-                                  children: [
-                                    Text(
-                                      "WorkID: ${todo.workId ?? "-"}",
-                                      style: TextStyle(fontSize: metaSize),
-                                    ),
+                                      Text("Ref: ${todo.ref}"),
+                                      const SizedBox(width: 16),
 
-                                    Text(
-                                      "Ref: ${todo.ref ?? "-"}",
-                                      style: TextStyle(fontSize: metaSize),
-                                    ),
-
-                                    Text(
-                                      "Priority: ${priorityLabels[todo.priority]}",
-                                      style: TextStyle(
-                                        color: getPriorityColor(todo.priority),
-                                        fontSize: metaSize,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-
-                                    Text(
-                                      "Progress: ${todo.progress ?? 0}%",
-                                      style: TextStyle(fontSize: metaSize),
-                                    ),
-
-                                    if (todo.dueDate != null)
                                       Text(
-                                        "Due: ${todo.dueDate!.toLocal().toString().split(' ')[0]}",
-                                        style: TextStyle(fontSize: metaSize),
+                                        "Priority: ${priorityLabels[todo.priority] ?? "-"}",
+                                        style: TextStyle(
+                                          color: getPriorityColor(
+                                            todo.priority ?? "M",
+                                          ),
+                                          fontWeight: FontWeight.bold,
+                                        ),
                                       ),
-                                  ],
-                                ),
+                                      const SizedBox(width: 16),
+
+                                      Text("Progress: ${todo.progress}%"),
+                                      const SizedBox(width: 16),
+
+                                      Text("Due: ${formatDate(todo.dueDate)}"),
+                                    ],
+                                  ),
 
                                 const SizedBox(height: 8),
 

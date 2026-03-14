@@ -1086,16 +1086,23 @@ Menampilkan task yang dipilih sebagai fokus hari ini.
                                   )
                                 else
                                   Wrap(
-                                    spacing: 16,
-                                    runSpacing: 4,
+                                    spacing: 10,
+                                    runSpacing: 2,
                                     children: [
-                                      Text("WorkID: ${todo.workId}"),
+                                      Text(
+                                        "WorkID: ${todo.workId}",
+                                        style: const TextStyle(fontSize: 13),
+                                      ),
 
-                                      Text("Ref: ${todo.ref}"),
+                                      Text(
+                                        "Ref: ${todo.ref}",
+                                        style: const TextStyle(fontSize: 13),
+                                      ),
 
                                       Text(
                                         "Priority: ${priorityLabels[todo.priority]}",
                                         style: TextStyle(
+                                          fontSize: 13,
                                           color: getPriorityColor(
                                             todo.priority ?? "M",
                                           ),
@@ -1103,34 +1110,19 @@ Menampilkan task yang dipilih sebagai fokus hari ini.
                                         ),
                                       ),
 
-                                      Text("Progress: ${todo.progress}%"),
+                                      Text(
+                                        "Progress: ${todo.progress}%",
+                                        style: const TextStyle(fontSize: 13),
+                                      ),
 
-                                      Text("Due: ${formatDate(todo.dueDate)}"),
+                                      Text(
+                                        "Due: ${formatDate(todo.dueDate)}",
+                                        style: const TextStyle(fontSize: 13),
+                                      ),
                                     ],
                                   ),
 
                                 const SizedBox(height: 8),
-
-                                if (isMobile)
-                                  Row(
-                                    children: [
-                                      TextButton(
-                                        onPressed: () {
-                                          openTaskDialog(todo: todo);
-                                        },
-                                        child: const Text("Edit"),
-                                      ),
-                                      IconButton(
-                                        icon: const Icon(
-                                          Icons.delete,
-                                          color: Colors.red,
-                                        ),
-                                        onPressed: () {
-                                          confirmDelete(todo);
-                                        },
-                                      ),
-                                    ],
-                                  ),
 
                                 LinearProgressIndicator(
                                   value: (todo.progress ?? 0) / 100,
@@ -1150,27 +1142,24 @@ Menampilkan task yang dipilih sebagai fokus hari ini.
                                     todayFocusIds.contains(todo.id)
                                         ? Icons.star
                                         : Icons.star_border,
+                                    size: 20,
                                     color: Colors.orange,
                                   ),
-                                  onPressed: () {
-                                    toggleFocus(todo);
-                                  },
+                                  onPressed: () => toggleFocus(todo),
                                 ),
-
-                                TextButton(
-                                  onPressed: () {
-                                    openTaskDialog(todo: todo);
-                                  },
-                                  child: const Text("Edit"),
+                                IconButton(
+                                  padding: EdgeInsets.zero,
+                                  constraints: BoxConstraints(),
+                                  icon: Icon(Icons.edit, size: 20),
+                                  onPressed: () => openTaskDialog(todo: todo),
                                 ),
                                 IconButton(
                                   icon: const Icon(
                                     Icons.delete,
+                                    size: 20,
                                     color: Colors.red,
                                   ),
-                                  onPressed: () {
-                                    confirmDelete(todo);
-                                  },
+                                  onPressed: () => confirmDelete(todo),
                                 ),
                               ],
                             ),

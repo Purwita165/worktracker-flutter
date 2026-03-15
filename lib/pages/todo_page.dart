@@ -3,7 +3,7 @@
 FILE: todo_page.dart
 ============================================================
 
-UI Layer dari aplikasi WorkTracker.
+UI Layer dari aplikasi WorkTracker-v1.
 
 Fungsi utama:
 
@@ -72,6 +72,8 @@ Tidak disimpan ke database (V1).
   final refController = TextEditingController();
   final searchController = TextEditingController();
   final quickController = TextEditingController();
+  bool isTypingQuick = false;
+  final FocusNode quickFocus = FocusNode();
 
   String? priority;
   DateTime? dueDate;
@@ -122,7 +124,12 @@ Tidak disimpan ke database (V1).
   @override
   void initState() {
     super.initState();
-    loadTodos();
+
+    quickController.addListener(() {
+      setState(() {
+        isTypingQuick = quickController.text.isNotEmpty;
+      });
+    });
   }
 
   /*
@@ -191,11 +198,14 @@ dueDate = null
     final todo = Todo(
       userId: currentUserId,
       description: text.trim(),
+
       workId: "",
       ref: "",
+
       priority: "M",
       dueDate: null,
       progress: 0,
+
       taskDate: DateTime.now(),
       isDone: false,
     );
@@ -203,6 +213,8 @@ dueDate = null
     await dbHelper.insertTodo(todo);
 
     quickController.clear();
+
+    quickFocus.requestFocus(); // fokus kembali ke Quick Capture
 
     await loadTodos();
   }
@@ -316,6 +328,9 @@ dueDate = null
   }
 
   Future<void> toggleTodo(Todo todo) async {
+    print("BEFORE toggle:");
+    print("todo id: ${todo.id}  isDone: ${todo.isDone}");
+
     setState(() {
       todo.isDone = !todo.isDone;
 
@@ -326,13 +341,18 @@ dueDate = null
       }
     });
 
+    print("AFTER toggle:");
+    print("todo id: ${todo.id}  isDone: ${todo.isDone}");
+
     await dbHelper.updateTodoStatus(
       todo.id!,
       todo.isDone ? 1 : 0,
-      todo.completedAt?.toIso8601String(), // kirim juga completed_at
+      todo.completedAt?.toIso8601String(),
     );
 
     await loadTodos();
+
+    print("TOTAL TODOS AFTER LOAD: ${todos.length}");
   }
 
   String getDuration(Todo todo) {
@@ -357,34 +377,22 @@ dueDate = null
     final now = DateTime.now();
 
     return todos.where((t) {
-      if (filterMode == "active" && t.isDone) return false;
-
-      if (filterMode == "completed" && !t.isDone) return false;
-
-      if (priorityFilter != null && t.priority != priorityFilter) {
+      if (currentFilter == FilterType.active && t.isDone) {
         return false;
       }
 
-      if (dueFilter == "overdue") {
-        if (t.dueDate == null || !t.dueDate!.isBefore(now)) {
+      if (currentFilter == FilterType.completed && !t.isDone) {
+        return false;
+      }
+
+      if (currentFilter == FilterType.priority) {
+        if (priorityFilter != null && t.priority != priorityFilter) {
           return false;
         }
       }
 
-      if (dueFilter == "week") {
+      if (currentFilter == FilterType.due) {
         if (t.dueDate == null) return false;
-
-        final weekLater = now.add(const Duration(days: 7));
-
-        if (t.dueDate!.isAfter(weekLater)) return false;
-      }
-
-      if (dueFilter == "month") {
-        if (t.dueDate == null) return false;
-
-        final monthLater = DateTime(now.year, now.month + 1, now.day);
-
-        if (t.dueDate!.isAfter(monthLater)) return false;
       }
 
       return true;
@@ -822,7 +830,7 @@ DUE DATE FILTER DIALOG
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  "WorkTracker",
+                  "WorkTracker-v1",
                   style: TextStyle(
                     fontSize: headerSize,
                     fontWeight: FontWeight.w700,
@@ -878,20 +886,28 @@ User cukup tekan Enter untuk menyimpan task.
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
             child: TextField(
               controller: quickController,
-
-              decoration: InputDecoration(
-                hintText: "Quick capture task...",
-                prefixIcon: const Icon(Icons.flash_on),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                filled: true,
-                fillColor: Colors.grey[100],
-              ),
+              focusNode: quickFocus,
 
               onSubmitted: (value) {
                 quickAddTask(value);
               },
+              decoration: InputDecoration(
+                hintText: "Quick capture task...",
+                prefixIcon: Icon(Icons.flash_on),
+
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+
+                suffixIcon: isTypingQuick
+                    ? IconButton(
+                        icon: Icon(Icons.send),
+                        onPressed: () {
+                          quickAddTask(quickController.text);
+                        },
+                      )
+                    : null,
+              ),
             ),
           ),
 
@@ -1187,17 +1203,19 @@ Menampilkan task yang dipilih sebagai fokus hari ini.
         ],
       ),
 
-      floatingActionButton: FloatingActionButton.extended(
-        icon: const Icon(Icons.add),
-        label: const Text("Add Task"),
+      floatingActionButton: isTypingQuick
+          ? null
+          : FloatingActionButton.extended(
+              icon: const Icon(Icons.add),
+              label: const Text("Add Task"),
 
-        backgroundColor: Colors.blue,
-        foregroundColor: Colors.white,
+              backgroundColor: Colors.blue,
+              foregroundColor: Colors.white,
 
-        onPressed: () {
-          openTaskDialog();
-        },
-      ),
+              onPressed: () {
+                openTaskDialog();
+              },
+            ),
     );
   }
 }

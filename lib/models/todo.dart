@@ -307,7 +307,7 @@ Tanggal task selesai.
       id: map['id'],
       userId: map['user_id'],
       description: map['description'],
-      priority: map['priority'],
+      priority: map['priority'], // ← diperbaiki
       workId: map['work_id'],
       ref: map['ref'],
       dueDate: map['due_date'] != null ? DateTime.parse(map['due_date']) : null,
@@ -315,11 +315,9 @@ Tanggal task selesai.
       taskDate: map['task_date'] != null
           ? DateTime.parse(map['task_date'])
           : DateTime.now(),
-
       completedAt: map['completed_at'] != null
           ? DateTime.parse(map['completed_at'])
           : null,
-
       isDone: map['is_done'] == 1,
     );
   }

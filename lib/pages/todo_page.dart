@@ -148,14 +148,25 @@ Tidak disimpan ke database (V1).
   */
 
   Future<void> loadTodos() async {
-    final data = await dbHelper.getTodos();
+  final data = await dbHelper.getTodos();
 
-    setState(() {
-      data.sort((a, b) => b.priority.compareTo(a.priority));
+  setState(() {
+    todos = data;
 
-      todos = data;
+    // 🔥 SORT pakai getDiff()
+    todos.sort((a, b) {
+      return getDiff(a.startDate).compareTo(getDiff(b.startDate));
     });
-  }
+  });
+}
+
+int getDiff(DateTime? date) {
+  if (date == null) return 9999; // biar taruh di bawah
+  final now = DateTime.now();
+  return date.difference(now).inDays;
+}
+
+
 
   /*
   ============================================================
@@ -422,6 +433,7 @@ dueDate = null
       }
 
       // DUE FILTER (ACTIVE ONLY)
+
       if (dueFilter != null) {
         if (t.isDone) return false;
 
@@ -451,6 +463,14 @@ dueDate = null
       return true;
     }).toList();
   }
+
+  // SORTING START DATE THE CLOSER THE UPPER
+
+ void sortTodos() {
+  todos.sort((a, b) {
+    return getDiff(a.startDate).compareTo(getDiff(b.startDate));
+  });
+}
 
   Widget filterText(String label, FilterType type) {
     final selected = currentFilter == type;

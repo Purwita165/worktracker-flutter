@@ -17,9 +17,16 @@ class TodoLogic {
   /// WARNA DESCRIPTION (URGENCY)
   /// ===============================
   static Color getDescriptionColor(Todo todo) {
+    final now = DateTime.now();
+
+    // 🔥 PRIORITAS 1: ACTIVE tapi sudah lewat dueDate
+    if (!todo.isDone && todo.dueDate != null && todo.dueDate!.isBefore(now)) {
+      return Colors.red;
+    }
+
+    // 🔥 PRIORITAS 2: sudah selesai → netral
     if (todo.isDone) return Colors.grey;
 
-    final now = DateTime.now();
     final start = todo.startDate;
 
     if (start == null) return Colors.black;
@@ -27,13 +34,13 @@ class TodoLogic {
     final diff = start.difference(now).inDays;
 
     if (diff > 7) {
-      return Colors.grey; // masih jauh
+      return Colors.grey;
     } else if (diff > 2) {
-      return Colors.green; // mulai mendekat
+      return Colors.green;
     } else if (diff >= 0) {
-      return Colors.blue; // sangat dekat
+      return Colors.blue;
     } else {
-      return Colors.orange; // sudah lewat start → harus jalan
+      return Colors.orange;
     }
   }
 

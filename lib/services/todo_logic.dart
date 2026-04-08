@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import '../models/todo.dart';
+import '../services/notification_service.dart';
 
 class TodoLogic {
   /// ===============================
@@ -51,5 +52,56 @@ class TodoLogic {
     if (todo.dueDate == null) return false;
 
     return todo.dueDate!.isBefore(DateTime.now()) && !todo.isDone;
+  }
+
+// ALARM SETTING
+
+   DateTime? _alarmAt9am(DateTime? start, {required int daysBefore}) {
+  if (start == null) return null;
+
+  final base = DateTime(start.year, start.month, start.day)
+      .subtract(Duration(days: daysBefore));
+
+  return DateTime(base.year, base.month, base.day, 9);
+}
+
+  Future<void> generateReminders(List<Todo> todos) async {
+    final Map<DateTime, List<Todo>> grouped = {};
+
+    for (var t in todos) {
+      final times = [
+        _alarmAt9am(t.startDate, daysBefore: 2),
+        _alarmAt9am(t.startDate, daysBefore: 1),
+      ];
+
+      for (var time in times) {
+        if (time != null && time.isAfter(DateTime.now())) {
+          grouped.putIfAbsent(time, () => []);
+          grouped[time]!.add(t);
+        }
+      }
+    }
+
+    await NotificationService().cancelAll();
+
+    for (var entry in grouped.entries) {
+      final time = entry.key;
+      final tasks = entry.value;
+
+      final title = tasks.length == 1
+          ? "Task starting soon"
+          : "${tasks.length} tasks starting soon";
+
+      final body = tasks.length == 1
+          ? tasks.first.description
+          : tasks.take(3).map((t) => "• ${t.description}").join("\n");
+
+      await NotificationService().schedule(
+        id: time.millisecondsSinceEpoch ~/ 1000,
+        title: title,
+        body: body,
+        scheduledTime: time,
+      );
+    }
   }
 }

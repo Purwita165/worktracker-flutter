@@ -60,7 +60,9 @@ import 'dart:io';
 
 import 'pages/todo_page.dart';
 
-void main() {
+import 'services/notification_service.dart';
+
+void main() async {
   /*
   ============================================================
   INITIALIZE FLUTTER BINDING
@@ -95,6 +97,9 @@ void main() {
 
   Android dan iOS sudah punya SQLite sendiri.
   */
+
+await
+NotificationService().init();
 
   if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
     sqfliteFfiInit();

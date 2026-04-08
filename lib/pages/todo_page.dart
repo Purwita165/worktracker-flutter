@@ -1220,7 +1220,7 @@ Menampilkan task yang dipilih sebagai fokus hari ini.
                   const SizedBox(height: 8),
 
                   SizedBox(
-                    height: 180, // bisa kamu adjust
+                    height: 300, // bisa kamu adjust
                     child: ListView(
                       children: focusTodos.map((todo) {
                         final metaText =

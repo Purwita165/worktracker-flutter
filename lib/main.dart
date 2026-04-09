@@ -57,26 +57,20 @@ Supaya kita tahu apakah aplikasi berjalan di:
 - Mac
 */
 import 'dart:io';
-
 import 'pages/todo_page.dart';
-
 import 'services/notification_service.dart';
+import 'package:timezone/data/latest.dart' as tzdata;
+import 'package:timezone/timezone.dart' as tz;
 
 void main() async {
   /*
   ============================================================
   INITIALIZE FLUTTER BINDING
   ============================================================
-
-  Dibutuhkan sebelum menggunakan plugin seperti:
-
-  - SQLite
-  - SharedPreferences
-  - Path provider
-
-  Tanpa ini kadang plugin tidak bekerja di Android.
   */
   WidgetsFlutterBinding.ensureInitialized();
+
+  tzdata.initializeTimeZones();
 
   /*
   ============================================================
